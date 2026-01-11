@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Silver Calculator</title>
+
+<style>
+:root { 
+  --row-h: 52px;
+}
+body { 
+  font-family: Arial, sans-serif; 
+  background:#f5f5f5; 
+  padding:10px; 
+}
+.card {
+  background:#fff; 
+  padding:16px; 
+  border-radius:14px;
+  max-width:100%; 
+  margin:auto;
+  box-shadow:0 8px 20px rgba(0,0,0,0.1);
+}
+h1 { 
+  text-align:center; 
+  font-size:22px; 
+  font-weight:800; 
+  margin-bottom:10px; 
+}
+h2 { 
+  font-size:18px; 
+  font-weight:800; 
+  margin:20px 0 6px; 
+}
+label { 
+  font-weight:700; 
+  display:block; 
+  margin-top:10px; 
+  font-size:14px;
+}
+input.main {
+  width:100%; 
+  padding:12px; 
+  margin-top:6px;
+  border-radius:10px; 
+  border:1px solid #ccc;
+  font-size:16px; 
+  font-weight:700;
+}
+
+/* TABLE WRAPPER FOR MOBILE SCROLL */
+.table-wrap {
+  overflow-x:auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* GRID */
+.grid { 
+  min-width:560px;
+}
+.header, .row {
+  display:grid;
+  grid-template-columns: 60px repeat(5, 100px);
+  align-items:center;
+  height:var(--row-h);
+}
+.header { 
+  font-size:15px; 
+  font-weight:900; 
+  border-bottom:3px solid #000;
+  position: sticky;
+  top: 0;
+  background:#fff;
+  z-index:2;
+}
+.row { 
+  border-bottom:1px solid #e6e6e6; 
+}
+
+/* CELLS */
+.hcell, .gd, .cell {
+  display:flex; 
+  align-items:center; 
+  justify-content:center;
+}
+.gd input {
+  width:44px; 
+  border:none; 
+  background:transparent;
+  text-align:center; 
+  font-size:15px; 
+  font-weight:800;
+}
+.cell { 
+  font-size:15px; 
+  font-weight:800; 
+}
+
+/* Larger screens */
+@media (min-width: 768px) {
+  .card { max-width:900px; padding:24px; }
+  h1 { font-size:28px; }
+  h2 { font-size:20px; }
+  .grid { min-width:100%; }
+  .header, .row {
+    grid-template-columns: 80px repeat(5, 1fr);
+    height:58px;
+  }
+  .header { font-size:18px; }
+  .cell, .gd input { font-size:18px; }
+}
+</style>
+</head>
+<body>
+
+<div class="card">
+<h1>Silver Calculator</h1>
+
+<label>Silver Rate (₹ / kg)</label>
+<input class="main" type="number" id="rate" value="255000" oninput="calc()">
+
+<label>Total Silver Used</label>
+<input class="main" type="number" id="total" value="100" oninput="calc()">
+
+<h2>With Profit</h2>
+<div class="table-wrap">
+  <div class="grid">
+    <div class="header">
+      <div class="hcell">GD</div>
+      <div class="hcell">150</div>
+      <div class="hcell">100</div>
+      <div class="hcell">50</div>
+      <div class="hcell">30</div>
+      <div class="hcell">10</div>
+    </div>
+    <div id="rowsProfit"></div>
+  </div>
+</div>
+
+<h2>Without Profit</h2>
+<div class="table-wrap">
+  <div class="grid">
+    <div class="header">
+      <div class="hcell">GD</div>
+      <div class="hcell">150</div>
+      <div class="hcell">100</div>
+      <div class="hcell">50</div>
+      <div class="hcell">30</div>
+      <div class="hcell">10</div>
+    </div>
+    <div id="rowsCost"></div>
+  </div>
+</div>
+
+</div>
+
+<script>
+const PROFIT = {150:130,100:90,50:50,30:35,10:12};
+let gds = [15,19,23,29,38,""];
+
+function calc() {
+  const rateKg = +document.getElementById("rate").value || 0;
+  const total = +document.getElementById("total").value || 0;
+  const rateGram = rateKg / 1000;
+
+  const rowsProfit = document.getElementById("rowsProfit");
+  const rowsCost = document.getElementById("rowsCost");
+  rowsProfit.innerHTML = "";
+  rowsCost.innerHTML = "";
+
+  gds.forEach((gd,i)=>{
+    const rowP=document.createElement("div"); rowP.className="row";
+    const rowC=document.createElement("div"); rowC.className="row";
+
+    const makeGD=()=>{
+      const d=document.createElement("div"); d.className="gd";
+      const inp=document.createElement("input");
+      inp.value=gd;
+      inp.oninput=()=>{ gds[i]=inp.value?parseInt(inp.value):""; calc(); };
+      d.appendChild(inp); return d;
+    };
+
+    rowP.appendChild(makeGD());
+    rowC.appendChild(makeGD());
+
+    if(!gd){
+      [150,100,50,30,10].forEach(()=>{
+        rowP.appendChild(document.createElement("div"));
+        rowC.appendChild(document.createElement("div"));
+      });
+    } else {
+      const cost150=(total/gd)*rateGram;
+      const costPerVark=cost150/150;
+
+      [150,100,50,30,10].forEach(v=>{
+        const p=document.createElement("div"); p.className="cell";
+        if ((v===30 || v===10) && gd<=23) {
+          p.textContent="";
+        } else {
+          p.textContent=(costPerVark*v + PROFIT[v]).toFixed(2);
+        }
+        rowP.appendChild(p);
+
+        const c=document.createElement("div"); c.className="cell";
+        if ((v===30 || v===10) && gd<=23) {
+          c.textContent="";
+        } else {
+          c.textContent=(costPerVark*v).toFixed(2);
+        }
+        rowC.appendChild(c);
+      });
+    }
+
+    rowsProfit.appendChild(rowP);
+    rowsCost.appendChild(rowC);
+  });
+}
+calc();
+</script>
+
+</body>
+</html>
